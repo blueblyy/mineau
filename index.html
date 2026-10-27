@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MILIKKU · AU Interaktif</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; user-select: none; }
+        body { background: #0a0a0c; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #fff; overflow: hidden; }
+
+        /* Frame iPhone */
+        .iphone-container {
+            width: 375px; height: 780px; background: #000; border-radius: 50px;
+            border: 4px solid #2a2a2e; position: relative; overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 25px rgba(255, 255, 255, 0.08);
+        }
+
+        /* Dynamic Island */
+        .notch {
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            width: 110px; height: 30px; background: #000; border-radius: 20px; z-index: 2000;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 12px;
+        }
+        .notch-camera { width: 12px; height: 12px; background: #111; border-radius: 50%; border: 1px solid #222; }
+
+        /* Status Bar */
+        .status-bar {
+            position: absolute; top: 0; width: 100%; height: 45px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 25px 0 25px; font-size: 13px; font-weight: 600; z-index: 1999;
+        }
+        .status-right { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+
+        /* Phone Screen Base */
+        .phone-screen {
+            width: 100%; height: 100%; background-size: cover; background-position: center;
+            position: relative; transition: background-image 0.3s ease;
+        }
+
+        /* ---------------- LOCKSCREEN ---------------- */
+        .lockscreen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover; background-position: center;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            padding: 70px 20px 30px 20px; z-index: 1000; transition: transform 0.4s ease, opacity 0.4s ease;
+        }
+        .lock-date { font-size: 17px; font-weight: 500; text-shadow: 0 2px 4px rgba(0,0,0,0.6); text-align: center; }
+        .lock-time { font-size: 82px; font-weight: 700; line-height: 1; letter-spacing: -2px; text-shadow: 0 4px 10px rgba(0,0,0,0.6); text-align: center; margin-top: -5px; }
+
+        .lock-footer { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        .lock-actions { width: 100%; display: flex; justify-content: space-between; padding: 0 20px; }
+        .action-btn { width: 45px; height: 45px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; }
+        .swipe-up-text { font-size: 13px; font-weight: 500; letter-spacing: 0.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.8); cursor: pointer; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-5px);} 60% {transform: translateY(-3px);} }
+
+        /* Passcode Overlay */
+        .passcode-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(25px);
+            z-index: 1100; display: none; flex-direction: column; align-items: center; justify-content: center;
+            padding: 30px; text-align: center;
+        }
+        .passcode-title { font-size: 20px; font-weight: 600; margin-bottom: 12px; }
+        .passcode-hint { font-size: 12px; color: #ddd; line-height: 1.4; margin-bottom: 25px; padding: 0 10px; }
+        .dots-container { display: flex; gap: 15px; margin-bottom: 35px; }
+        .dot { width: 13px; height: 13px; border: 1.5px solid #fff; border-radius: 50%; background: transparent; transition: 0.2s; }
+        .dot.active { background: #fff; }
+        .keypad { display: grid; grid-template-columns: repeat(3, 75px); gap: 15px; justify-content: center; }
+        .key { width: 75px; height: 75px; background: rgba(255,255,255,0.12); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+        .key:active { background: rgba(255,255,255,0.3); }
+        .key-num { font-size: 28px; font-weight: 400; }
+        .key-sub { font-size: 9px; letter-spacing: 1px; color: #aaa; margin-top: -3px; }
+        .key.empty { background: transparent; cursor: default; }
+        .pass-footer-btn { display: flex; justify-content: space-between; width: 100%; padding: 0 30px; margin-top: 25px; font-size: 14px; color: #fff; cursor: pointer; }
+
+        /* ---------------- HOMESCREEN ---------------- */
+        .homescreen {
+            padding: 60px 18px 20px 18px; display: flex; flex-direction: column; height: 100%; justify-content: space-between;
+        }
+        .widgets-row { display: flex; gap: 14px; margin-bottom: 15px; }
+        .widget {
+            flex: 1; height: 140px; border-radius: 22px; padding: 14px;
+            backdrop-filter: blur(20px); background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3); display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .widget-date { font-size: 11px; font-weight: 700; color: #ff3b30; text-transform: uppercase; }
+        .widget-day { font-size: 34px; font-weight: 700; line-height: 1; }
+        .widget-text { font-size: 11px; color: #eee; line-height: 1.3; font-weight: 500; }
+        .widget-weather-city { font-size: 13px; font-weight: 600; }
+        .widget-temp { font-size: 32px; font-weight: 300; margin: 2px 0; }
+        .widget-desc { font-size: 11px; color: #ddd; }
+
+        .apps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 12px; }
+        .app-icon { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+        .icon-box {
+            width: 58px; height: 58px; border-radius: 14px; display: flex;
+            justify-content: center; align-items: center; font-size: 26px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: transform 0.1s; position: relative;
+        }
+        .icon-box:active { transform: scale(0.9); }
+        .badge { position: absolute; top: -4px; right: -4px; background: #ff3b30; color: #fff; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .app-name { font-size: 11px; margin-top: 5px; text-shadow: 0 1px 3px rgba(0,0,0,0.9); font-weight: 500; }
+
+        .dock {
+            background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(25px);
+            border-radius: 28px; padding: 12px 15px; display: flex; justify-content: space-around; margin-bottom: 15px;
+        }
+
+        /* ---------------- WINDOW APPS ---------------- */
+        .app-window {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #1c1c1e; z-index: 1500; display: none; flex-direction: column;
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .app-header {
+            height: 85px; background: #2c2c2e; padding: 42px 15px 10px 15px;
+            display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #3a3a3c;
+        }
+        .app-title { font-size: 16px; font-weight: 600; }
+        .btn-back { color: #0a84ff; font-size: 15px; cursor: pointer; background: none; border: none; font-weight: 500; }
+
+        .app-content { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; }
+
+        /* Home Bar Bottom */
+        .home-bar {
+            position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+            width: 130px; height: 5px; background: #fff; border-radius: 3px; z-index: 3000; cursor: pointer;
+        }
+
+        /* App Specific Styles */
+        /* Galeri */
+        .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .gallery-item { width: 100%; height: 100px; background-size: cover; background-position: center; border-radius: 8px; cursor: pointer; }
+        .upload-btn { background: #0a84ff; color: #fff; padding: 12px; border-radius: 12px; text-align: center; margin-bottom: 15px; cursor: pointer; font-weight: 600; font-size: 14px; }
+
+        /* Chat */
+        .contact-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2c2c2e; cursor: pointer; }
+        .avatar { width: 45px; height: 45px; border-radius: 50%; background: #3a3a3c; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .chat-bubble-user { background: #0b93f6; color: #fff; align-self: flex-end; padding: 10px 14px; border-radius: 18px 18px 2px 18px; margin-bottom: 8px; max-width: 80%; font-size: 14px; word-wrap: break-word; }
+        .chat-bubble-them { background: #3a3a3c; color: #fff; align-self: flex-start; padding: 10px 14px; border-radius: 18px 18px 18px 2px; margin-bottom: 8px; max-width: 80%; font-size: 14px; word-wrap: break-word; }
+        .input-bar { display: flex; gap: 8px; padding: 10px; background: #2c2c2e; border-top: 1px solid #3a3a3c; }
+        .input-bar input { flex: 1; padding: 10px 15px; border-radius: 20px; border: none; background: #1c1c1e; color: #fff; outline: none; font-size: 14px; }
+        .input-bar button { background: #0a84ff; border: none; color: #fff; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 600; }
+
+        /* Notes */
+        .note-card { background: #2c2c2e; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+        .note-title { font-weight: 600; margin-bottom: 4px; color: #ffd60a; }
+        .note-desc { font-size: 13px; color: #ccc; white-space: pre-wrap; }
+
+        /* Social Feeds (IG / X) */
+        .post-card { background: #2c2c2e; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+        .post-header { font-weight: 600; font-size: 13px; margin-bottom: 8px; }
+        .post-text { font-size: 14px; color: #eee; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="iphone-container">
+    <!-- Dynamic Island -->
+    <div class="notch"><div class="notch-camera"></div></div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <span id="clockHeader">21:05</span>
+        <div class="status-right"><span>5G</span><span>85%</span></div>
+    </div>
+
+    <!-- MAIN PHONE SCREEN -->
+    <div class="phone-screen" id="mainScreen" style="background-image: url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600');">
+
+        <!-- 1. LOCKSCREEN -->
+        <div class="lockscreen" id="lockscreen" style="background-image: url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600');" onclick="openPasscode()">
+            <div>
+                <div class="lock-date" id="lockDate">Tuesday, October 27</div>
+                <div class="lock-time" id="lockTime">21:05</div>
+            </div>
+            <div class="lock-footer">
+                <div class="lock-actions">
+                    <div class="action-btn">🔦</div>
+                    <div class="action-btn">📷</div>
+                </div>
+                <div class="swipe-up-text">Tap or Swipe up to open</div>
+            </div>
+        </div>
+
+        <!-- 2. PASSCODE OVERLAY -->
+        <div class="passcode-screen" id="passcodeScreen">
+            <div class="passcode-title">Enter Passcode</div>
+            <div class="passcode-hint">
+                Kode diperbarui. Hint: PIN standar awal sistem MINE (1234).
+            </div>
+            <div class="dots-container">
+                <div class="dot" id="d1"></div><div class="dot" id="d2"></div>
+                <div class="dot" id="d3"></div><div class="dot" id="d4"></div>
+            </div>
+            <div class="keypad">
+                <div class="key" onclick="pressKey('1')"><span class="key-num">1</span></div>
+                <div class="key" onclick="pressKey('2')"><span class="key-num">2</span><span class="key-sub">ABC</span></div>
+                <div class="key" onclick="pressKey('3')"><span class="key-num">3</span><span class="key-sub">DEF</span></div>
+                <div class="key" onclick="pressKey('4')"><span class="key-num">4</span><span class="key-sub">GHI</span></div>
+                <div class="key" onclick="pressKey('5')"><span class="key-num">5</span><span class="key-sub">JKL</span></div>
+                <div class="key" onclick="pressKey('6')"><span class="key-num">6</span><span class="key-sub">MNO</span></div>
+                <div class="key" onclick="pressKey('7')"><span class="key-num">7</span><span class="key-sub">PQRS</span></div>
+                <div class="key" onclick="pressKey('8')"><span class="key-num">8</span><span class="key-sub">TUV</span></div>
+                <div class="key" onclick="pressKey('9')"><span class="key-num">9</span><span class="key-sub">WXYZ</span></div>
+                <div class="key empty"></div>
+                <div class="key" onclick="pressKey('0')"><span class="key-num">0</span></div>
+                <div class="key empty" onclick="deleteKey()">⌫</div>
+            </div>
+            <div class="pass-footer-btn">
+                <span>Emergency</span>
+                <span onclick="closePasscode()">Cancel</span>
+            </div>
+        </div>
+
+        <!-- 3. HOMESCREEN -->
+        <div class="homescreen">
+            <!-- Widgets Row -->
+            <div class="widgets-row">
+                <div class="widget">
+                    <div>
+                        <div class="widget-date" id="widgetDate">Kamis</div>
+                        <div class="widget-day" id="widgetDay">22</div>
+                    </div>
+                    <div class="widget-text">Dokumentasi terakhir Purnama JAM 4 SORE<br>Jemput Hanni di rumah ibu</div>
+                </div>
+                <div class="widget">
+                    <div>
+                        <div class="widget-weather-city">Yogyakarta ↗</div>
+                        <div class="widget-temp">26°</div>
+                    </div>
+                    <div class="widget-desc">Hujan ringan<br>Tinggi: 29° Lebar: 22°</div>
+                </div>
+            </div>
+
+            <!-- Apps Grid -->
+            <div class="apps-grid">
+                <div class="app-icon" onclick="openApp('app-photos')">
+                    <div class="icon-box" style="background: #fff;">🖼️</div>
+                    <div class="app-name">Foto</div>
+                </div>
+                <div class="app-icon" onclick="openApp('app-mail')">
+                    <div class="icon-box" style="background: #34c759;"><span class="badge">1</span>✉️</div>
+                    <div class="app-name">Surat</div>
+                </div>
+                <div class="app-icon" onclick="openApp('app-weather')">
+                    <div class="icon-box" style="background: #64d2ff;">⛅</div>
+                    <div class="app-name">Cuaca</div>
+                </div>
+                <div class="app-icon" onclick="openApp('app-calendar')">
+                    <div class="icon-box" style="background: #fff; color: #ff3b30; font-weight: bold; font-size: 20px;">27</div>
+                    <div class="app-name">Kalender</div>
+                </div>
+
+                <div class="app-icon" onclick="openApp('app-notes')">
+                    <div class="icon-box" style="background: #ffd60a; color: #000;">📝</div>
+                    <div class="app-name">Catatan</div>
+                </div>
+                <div class="app-icon" onclick="openApp('app-maps')">
+                    <div class="icon-box" style="background: #30d158;">📍</div>
+                    <div class="app-name">Peta</div>
+                </div>
+                <div class="app-icon" onclick="openApp('app-x')">
+                    <div class="icon-box" style="background: #000; border: 1px solid #444;">𝕏</div>
+                    <div class="app-name">X</div>
+                </div>
+                <div class="app-icon" onclick="openApp('app-settings')">
+                    <div class="icon-box" style="background: #8e8e93;">⚙️</div>
+                    <div class="app-name">Pengaturan</div>
+                </div>
+
+                <div class="app-icon" onclick="openApp('app-camera')">
+                    <div class="icon-box" style="background: #555;">📷</div>
+                    <div class="app-name">Kamera</div>
+                </div>
+                <div class="app-icon" onclick="openApp('app-clock')">
+                    <div class="icon-box" style="background: #000; border: 1px solid #333;">⏰</div>
+                    <div class="app-name">Jam</div>
+                </div>
+                <div class="app-icon" onclick="openApp('app-journal')">
+                    <div class="icon-box" style="background: #bf5af2;">📖</div>
+                    <div class="app-name">Jurnal</div>
+                </div>
+                <div class="app-icon" onclick="openApp('app-ig')">
+                    <div class="icon-box" style="background: linear-gradient(45deg, #f09433, #bc1888);">📸</div>
+                    <div class="app-name">Instagram</div>
+                </div>
+            </div>
+
+            <!-- Bottom Dock Apps -->
+            <div class="dock">
+                <div class="app-icon" onclick="openApp('app-phone')">
+                    <div class="icon-box" style="background: #30d158;">📞</div>
+                </div>
+                <div class="app-icon" onclick="openApp('app-safari')">
+                    <div class="icon-box" style="background: #0a84ff;">🌐</div>
+                </div>
+                <div class="app-icon" onclick="openApp('app-chat')">
+                    <div class="icon-box" style="background: #25d366;"><span class="badge">2</span>💬</div>
+                </div>
+                <div class="app-icon" onclick="openApp('app-music')">
+                    <div class="icon-box" style="background: #ff375f;">🎵</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. APP WINDOWS -->
+
+        <!-- GALERI (FOTO) -->
+        <div class="app-window" id="app-photos">
+            <div class="app-header">
+                <button class="btn-back" onclick="closeApp('app-photos')">❮ Kembali</button>
+                <div class="app-title">Galeri Foto</div><div></div>
+            </div>
+            <div class="app-content">
+                <label class="upload-btn">
+                    + Unggah Foto dari HP Anda
+                    <input type="file" accept="image/*" style="display:none;" onchange="uploadImage(event)">
+                </label>
+                <div class="gallery-grid" id="galleryGrid">
+                    <div class="gallery-item" style="background-image: url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600');" onclick="setWallpaper(this)"></div>
+                    <div class="gallery-item" style="background-image: url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600');" onclick="setWallpaper(this)"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PESAN (CHAT) -->
+        <div class="app-window" id="app-chat">
+            <div class="app-header">
+                <button class="btn-back" id="chatBackBtn" onclick="backToChatList()">❮ Pesan</button>
+                <div class="app-title" id="chatHeaderTitle">Pesan</div><div></div>
+            </div>
+            <div class="app-content" id="chatListScreen">
+                <div class="contact-item" onclick="openChatRoom('Gala ❤️')">
+                    <div class="avatar">🔒</div>
+                    <div style="flex:1;">
+                        <div style="font-weight: 600;">Gala ❤️</div>
+                        <div style="font-size: 12px; color: #8e8e93;">"Jangan lupa makan siang."</div>
+                    </div>
+                </div>
+                <div class="contact-item" onclick="openChatRoom('Karin')">
+                    <div class="avatar">👭</div>
+                    <div style="flex:1;">
+                        <div style="font-weight: 600;">Karin</div>
+                        <div style="font-size: 12px; color: #8e8e93;">"Ra, lu aman kan di sana?"</div>
+                    </div>
+                </div>
+            </div>
+            <div id="chatRoomScreen" style="display: none; flex-direction: column; flex: 1;">
+                <div class="app-content" id="messagesBox"></div>
+                <div class="input-bar">
+                    <input type="text" id="chatInput" placeholder="Ketik pesan...">
+                    <button onclick="sendChatMessage()">Kirim</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CATATAN (NOTES) -->
+        <div class="app-window" id="app-notes">
+            <div class="app-header">
+                <button class="btn-back" onclick="closeApp('app-notes')">❮ Kembali</button>
+                <div class="app-title">Catatan</div><div></div>
+            </div>
+            <div class="app-content">
+                <div class="input-bar" style="margin-bottom: 15px; border-radius: 12px;">
+                    <input type="text" id="noteInput" placeholder="Ketik catatan baru...">
+                    <button onclick="addNote()">Simpan</button>
+                </div>
+                <div id="notesContainer">
+                    <div class="note-card">
+                        <div class="note-title">Sistem MINE Penthouse</div>
+                        <div class="note-desc">Kunci otomatis aktif tiap jam 20.00. Sensor di lantai 2.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- X (TWITTER) -->
+        <div class="app-window" id="app-x">
+            <div class="app-header">
+                <button class="btn-back" onclick="closeApp('app-x')">❮ Kembali</button>
+                <div class="app-title">𝕏</div><div></div>
+            </div>
+            <div class="app-content">
+                <div class="input-bar" style="margin-bottom: 15px; border-radius: 12px;">
+                    <input type="text" id="tweetInput" placeholder="Apa yang sedang terjadi?">
+                    <button onclick="postTweet()">Post</button>
+                </div>
+                <div id="tweetsContainer">
+                    <div class="post-card">
+                        <div class="post-header">@aora_ • 2j</div>
+                        <div class="post-text">Dingin banget hari ini...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INSTAGRAM -->
+        <div class="app-window" id="app-ig">
+            <div class="app-header">
+                <button class="btn-back" onclick="closeApp('app-ig')">❮ Kembali</button>
+                <div class="app-title">Instagram</div><div></div>
+            </div>
+            <div class="app-content">
+                <div class="input-bar" style="margin-bottom: 15px; border-radius: 12px;">
+                    <input type="text" id="igInput" placeholder="Tulis caption postingan...">
+                    <button onclick="postIg()">Bagikan</button>
+                </div>
+                <div id="igContainer">
+                    <div class="post-card">
+                        <div class="post-header">aora_real</div>
+                        <div class="post-text">Suasana baru ☕</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SAFARI BROWSER -->
+        <div class="app-window" id="app-safari">
+            <div class="app-header">
+                <button class="btn-back" onclick="closeApp('app-safari')">❮ Kembali</button>
+                <div class="app-title">Safari</div><div></div>
+            </div>
+            <div class="app-content">
+                <div class="input-bar" style="margin-bottom: 15px; border-radius: 12px;">
+                    <input type="text" placeholder="Cari atau ketik situs web...">
+                    <button onclick="alert('Mencari...')">Cari</button>
+                </div>
+                <p style="color:#aaa; font-size: 13px; text-align: center; margin-top: 20px;">Halaman web siap digunakan.</p>
+            </div>
+        </div>
+
+        <!-- APP GENERIC (Untuk App Lainnya) -->
+        <div class="app-window" id="app-generic">
+            <div class="app-header">
+                <button class="btn-back" onclick="closeApp('app-generic')">❮ Kembali</button>
+                <div class="app-title" id="genericTitle">Aplikasi</div><div></div>
+            </div>
+            <div class="app-content" style="text-align: center; padding-top: 40px; color: #aaa;">
+                <div style="font-size: 40px; margin-bottom: 10px;">📱</div>
+                <p id="genericText">Aplikasi ini siap digunakan.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Home Bar Button -->
+    <div class="home-bar" onclick="goHome()"></div>
+</div>
+
+<script>
+    // Realtime Clock
+    function updateClock() {
+        const now = new Date();
+        const hrs = String(now.getHours()).padStart(2, '0');
+        const mins = String(now.getMinutes()).padStart(2, '0');
+        const timeStr = `${hrs}:${mins}`;
+        document.getElementById('clockHeader').innerText = timeStr;
+        document.getElementById('lockTime').innerText = timeStr;
+
+        const options = { weekday: 'long', month: 'long', day: 'numeric' };
+        document.getElementById('lockDate').innerText = now.toLocaleDateString('en-US', options);
+    }
+    setInterval(updateClock, 1000); updateClock();
+
+    // Lockscreen & Passcode
+    function openPasscode() { document.getElementById('passcodeScreen').style.display = 'flex'; }
+    function closePasscode() { document.getElementById('passcodeScreen').style.display = 'none'; clearPin(); }
+    
+    let pin = "";
+    const correctPin = "1234";
+
+    function pressKey(num) {
+        if (pin.length < 4) {
+            pin += num;
+            updateDots();
+            if (pin.length === 4) {
+                setTimeout(() => {
+                    if (pin === correctPin) {
+                        document.getElementById('passcodeScreen').style.display = 'none';
+                        document.getElementById('lockscreen').style.display = 'none';
+                        clearPin();
+                    } else {
+                        alert("Passcode salah!");
+                        clearPin();
+                    }
+                }, 150);
+            }
+        }
+    }
+    function deleteKey() { pin = pin.slice(0, -1); updateDots(); }
+    function clearPin() { pin = ""; updateDots(); }
+    function updateDots() {
+        for (let i = 1; i <= 4; i++) {
+            const dot = document.getElementById(`d${i}`);
+            if (i <= pin.length) dot.classList.add('active');
+            else dot.classList.remove('active');
+        }
+    }
+
+    // App Windows Control
+    function openApp(id) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.style.display = 'flex';
+        } else {
+            document.getElementById('genericTitle').innerText = "Aplikasi";
+            document.getElementById('app-generic').style.display = 'flex';
+        }
+    }
+    function closeApp(id) { document.getElementById(id).style.display = 'none'; }
+    function goHome() {
+        document.querySelectorAll('.app-window').forEach(win => win.style.display = 'none');
+    }
+
+    // Galeri & Wallpaper
+    function uploadImage(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const url = evt.target.result;
+                const grid = document.getElementById('galleryGrid');
+                const div = document.createElement('div');
+                div.className = 'gallery-item';
+                div.style.backgroundImage = `url('${url}')`;
+                div.onclick = function() { setWallpaper(div); };
+                grid.prepend(div);
+                alert("Foto ditambahkan! Klik foto di galeri untuk menjadikannya Wallpaper.");
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    function setWallpaper(el) {
+        const bgUrl = el.style.backgroundImage;
+        document.getElementById('mainScreen').style.backgroundImage = bgUrl;
+        document.getElementById('lockscreen').style.backgroundImage = bgUrl;
+        alert("Wallpaper berhasil diubah!");
+    }
+
+    // Chat System
+    let currentChatContact = "";
+    function openChatRoom(name) {
+        currentChatContact = name;
+        document.getElementById('chatHeaderTitle').innerText = name;
+        document.getElementById('chatListScreen').style.display = 'none';
+        document.getElementById('chatRoomScreen').style.display = 'flex';
+        document.getElementById('chatBackBtn').onclick = backToChatList;
+    }
+    function backToChatList() {
+        document.getElementById('chatHeaderTitle').innerText = "Pesan";
+        document.getElementById('chatListScreen').style.display = 'block';
+        document.getElementById('chatRoomScreen').style.display = 'none';
+        document.getElementById('chatBackBtn').onclick = function(){ closeApp('app-chat'); };
+    }
+    function sendChatMessage() {
+        const input = document.getElementById('chatInput');
+        const val = input.value.trim();
+        if (!val) return;
+        const box = document.getElementById('messagesBox');
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-bubble-user';
+        bubble.innerText = val;
+        box.appendChild(bubble);
+        input.value = "";
+        box.scrollTop = box.scrollHeight;
+    }
+
+    // Notes System
+    function addNote() {
+        const input = document.getElementById('noteInput');
+        const val = input.value.trim();
+        if (!val) return;
+        const container = document.getElementById('notesContainer');
+        const card = document.createElement('div');
+        card.className = 'note-card';
+        card.innerHTML = `<div class="note-title">Catatan Baru</div><div class="note-desc">${val}</div>`;
+        container.prepend(card);
+        input.value = "";
+    }
+
+    // X / Tweet System
+    function postTweet() {
+        const input = document.getElementById('tweetInput');
+        const val = input.value.trim();
+        if (!val) return;
+        const container = document.getElementById('tweetsContainer');
+        const card = document.createElement('div');
+        card.className = 'post-card';
+        card.innerHTML = `<div class="post-header">@aora_ • Baru saja</div><div class="post-text">${val}</div>`;
+        container.prepend(card);
+        input.value = "";
+    }
+
+    // IG System
+    function postIg() {
+        const input = document.getElementById('igInput');
+        const val = input.value.trim();
+        if (!val) return;
+        const container = document.getElementById('igContainer');
+        const card = document.createElement('div');
+        card.className = 'post-card';
+        card.innerHTML = `<div class="post-header">aora_real</div><div class="post-text">${val}</div>`;
+        container.prepend(card);
+        input.value = "";
+    }
+</script>
+
+</body>
+</html>
